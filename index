@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>HydroLog</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --w:#fff;--off:#f7f7f5;--light:#ececea;--mid:#c8c8c5;--muted:#8a8a85;
+  --dark:#2a2a28;--black:#0f0f0e;
+  --blue:#3b82f6;--amber:#d97706;--green:#10b981;--red:#ef4444;--orange:#f97316;
+  --green-l:#d1fae5;--orange-l:#ffedd5;--red-l:#fee2e2;--blue-l:#dbeafe;
+  --r:14px;--rs:10px;
+}
+body{font-family:'Outfit',sans-serif;background:var(--off);color:var(--black);min-height:100vh;max-width:430px;margin:0 auto;overflow-x:hidden}
+
+/* STATUS */
+.status-bar{background:var(--w);padding:10px 20px 8px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--light);position:sticky;top:0;z-index:300}
+.status-time{font-family:'DM Mono',monospace;font-size:13px;font-weight:500}
+.status-icons{display:flex;gap:6px;font-size:13px}
+
+/* TOPBAR */
+.topbar{background:var(--w);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--light)}
+.logo-wrap{display:flex;align-items:center;gap:10px}
+.logo-box{width:32px;height:32px;background:var(--black);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.app-name{font-size:18px;font-weight:700;letter-spacing:-.3px}
+.top-date{font-size:12px;color:var(--muted)}
+
+/* TABS */
+.tabs{background:var(--w);display:grid;grid-template-columns:repeat(5,1fr);border-bottom:1px solid var(--light);overflow-x:auto}
+.tab{padding:10px 4px;font-size:10px;font-weight:500;color:var(--muted);text-align:center;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap}
+.tab.active{color:var(--black);border-bottom-color:var(--black)}
+
+/* SCREENS */
+.screen{display:none;padding:16px;padding-bottom:100px}
+.screen.active{display:block}
+.ph{margin-bottom:14px}
+.ph-title{font-size:22px;font-weight:700;letter-spacing:-.3px}
+.ph-sub{font-size:12px;color:var(--muted);margin-top:2px}
+.sec-lbl{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;padding:0 2px}
+
+/* CARD */
+.card{background:var(--w);border:1px solid var(--light);border-radius:var(--r);padding:16px;margin-bottom:10px}
+
+/* RINGS */
+.ring-wrap{display:flex;flex-direction:column;align-items:center;padding:8px 0 4px}
+.ring-svg-wrap{position:relative;width:140px;height:140px;margin-bottom:10px}
+.ring-svg{width:140px;height:140px;transform:rotate(-90deg)}
+.ring-track{fill:none;stroke:var(--light);stroke-width:10}
+.ring-fill{fill:none;stroke-width:10;stroke-linecap:round;transition:stroke-dashoffset .7s cubic-bezier(.4,0,.2,1)}
+.ring-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+.ring-val{font-family:'DM Mono',monospace;font-size:26px;font-weight:500;line-height:1}
+.ring-sub{font-size:11px;color:var(--muted);margin-top:3px}
+.two-rings{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+
+/* QUICK BTNS */
+.quick-row{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:6px}
+.qbtn{padding:7px 12px;border-radius:20px;border:1.5px solid;font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;font-family:'Outfit',sans-serif;background:transparent}
+.qbtn:active{transform:scale(.93)}
+.qbtn.water{border-color:var(--blue);color:var(--blue)}
+.qbtn.urine{border-color:var(--amber);color:var(--amber)}
+
+/* STATS */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.stat-box{background:var(--w);border:1px solid var(--light);border-radius:var(--rs);padding:14px}
+.stat-num{font-family:'DM Mono',monospace;font-size:20px;font-weight:500;line-height:1}
+.stat-desc{font-size:11px;color:var(--muted);margin-top:3px}
+
+/* BALANCE */
+.balance-bar{height:8px;border-radius:4px;overflow:hidden;background:var(--light);display:flex;margin-top:8px}
+.bal-w{background:var(--blue);transition:width .5s}
+.bal-u{background:var(--amber);transition:width .5s}
+.bal-lbls{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px}
+
+/* ALARM CARD */
+.alarm-card{background:var(--black);border-radius:var(--r);padding:18px;margin-bottom:10px;color:var(--w)}
+.alarm-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.alarm-title-text{font-size:11px;font-weight:600;color:rgba(255,255,255,.5);letter-spacing:.08em;text-transform:uppercase}
+.alarm-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;letter-spacing:.06em}
+.alarm-badge.on{background:var(--green);color:var(--black)}
+.alarm-badge.off{background:rgba(255,255,255,.12);color:rgba(255,255,255,.5)}
+.alarm-countdown{font-family:'DM Mono',monospace;font-size:44px;font-weight:500;line-height:1;letter-spacing:-2px;margin-bottom:4px}
+.alarm-cd-sub{font-size:12px;color:rgba(255,255,255,.4)}
+.alarm-prog{height:2px;background:rgba(255,255,255,.1);border-radius:1px;margin-top:16px;overflow:hidden}
+.alarm-prog-fill{height:100%;background:var(--green);border-radius:1px;transition:width 1s linear}
+.alarm-btns{display:flex;gap:8px;margin-top:14px}
+.a-btn{flex:1;padding:11px;border-radius:9px;border:none;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
+.a-btn:active{transform:scale(.96)}
+.a-btn.prim{background:var(--w);color:var(--black)}
+.a-btn.sec{background:rgba(255,255,255,.1);color:rgba(255,255,255,.8)}
+.a-btn.stop{background:rgba(239,68,68,.18);color:#fca5a5}
+
+/* INTERVAL */
+.iv-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0 10px}
+.iv-opt{padding:10px 4px;border-radius:var(--rs);border:1.5px solid var(--light);text-align:center;cursor:pointer;transition:all .15s;background:var(--w)}
+.iv-opt.sel{background:var(--black);border-color:var(--black);color:var(--w)}
+.iv-opt:active{transform:scale(.94)}
+.iv-num{font-family:'DM Mono',monospace;font-size:16px;font-weight:500;line-height:1}
+.iv-lbl{font-size:10px;color:var(--muted);margin-top:2px}
+.iv-opt.sel .iv-lbl{color:rgba(255,255,255,.5)}
+.custom-row{display:flex;align-items:center;gap:8px}
+.custom-row input{flex:1;background:var(--w);border:1.5px solid var(--light);border-radius:var(--rs);padding:10px 12px;font-family:'DM Mono',monospace;font-size:16px;color:var(--black);outline:none;transition:border-color .2s}
+.custom-row input:focus{border-color:var(--black)}
+.custom-row .unit{font-size:13px;color:var(--muted);white-space:nowrap}
+.apply-btn{padding:10px 16px;border-radius:var(--rs);background:var(--black);color:var(--w);border:none;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
+.apply-btn:active{opacity:.7}
+
+/* SETTINGS ITEMS */
+.s-item{background:var(--w);border:1px solid var(--light);border-radius:var(--rs);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.s-left{display:flex;align-items:center;gap:10px}
+.s-icon{font-size:18px}
+.s-name{font-size:14px;font-weight:500}
+.s-sub{font-size:11px;color:var(--muted);margin-top:1px}
+.s-input{background:var(--off);border:1.5px solid var(--light);border-radius:8px;padding:8px 12px;font-family:'DM Mono',monospace;font-size:15px;font-weight:500;color:var(--black);text-align:right;width:80px;outline:none}
+.s-input:focus{border-color:var(--black)}
+.toggle{width:44px;height:24px;border-radius:12px;background:var(--light);position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
+.toggle.on{background:var(--black)}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--w);transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.toggle.on::after{left:23px}
+
+/* LOG ITEMS */
+.log-item{background:var(--w);border:1px solid var(--light);border-radius:var(--rs);padding:12px 14px;display:flex;align-items:center;gap:12px;margin-bottom:8px;animation:fadeIn .22s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
+.l-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.l-dot.water{background:var(--blue)}
+.l-dot.urine{background:var(--amber)}
+.l-info{flex:1}
+.l-type{font-size:13px;font-weight:500}
+.l-meta{font-size:11px;color:var(--muted);margin-top:1px}
+.l-amt{font-family:'DM Mono',monospace;font-size:14px;font-weight:500}
+.l-del{font-size:14px;cursor:pointer;color:var(--mid);padding:4px;border-radius:6px;transition:all .15s}
+.l-del:active{color:var(--red)}
+
+/* TIMING BADGE */
+.timing-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:12px;font-size:10px;font-weight:600;margin-top:4px}
+.timing-badge.good{background:var(--green-l);color:#065f46}
+.timing-badge.warn{background:var(--orange-l);color:#9a3412}
+.timing-badge.bad{background:var(--red-l);color:#991b1b}
+
+.empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:13px}
+.empty-icon{font-size:34px;margin-bottom:10px;opacity:.3}
+
+/* CALENDAR */
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.cal-month{font-size:16px;font-weight:700}
+.cal-nav-btn{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--light);background:var(--w);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.cal-nav-btn:active{background:var(--black);color:var(--w);border-color:var(--black)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-dow{font-size:10px;font-weight:600;color:var(--muted);text-align:center;padding:4px 0;letter-spacing:.04em}
+.cal-day{aspect-ratio:1;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;font-size:12px;font-weight:500;position:relative}
+.cal-day:active{transform:scale(.93)}
+.cal-day.empty-day{cursor:default}
+.cal-day.today{background:var(--black);color:var(--w)}
+.cal-day.selected{background:var(--blue);color:var(--w)}
+.cal-day.has-data::after{content:'';position:absolute;bottom:3px;width:5px;height:5px;border-radius:50%;background:var(--amber)}
+.cal-day.today.has-data::after{background:var(--w)}
+.cal-day.selected.has-data::after{background:var(--w)}
+.cal-day-num{line-height:1}
+.cal-selected-info{background:var(--w);border:1px solid var(--light);border-radius:var(--r);padding:14px;margin-top:10px}
+.cal-selected-date{font-size:14px;font-weight:700;margin-bottom:10px}
+
+/* LOGBOOK */
+.lb-filter{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;padding-bottom:2px}
+.lb-filter-btn{padding:7px 14px;border-radius:20px;border:1.5px solid var(--light);background:var(--w);font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;font-family:'Outfit',sans-serif;transition:all .15s;flex-shrink:0}
+.lb-filter-btn.active{background:var(--black);border-color:var(--black);color:var(--w)}
+.lb-group{margin-bottom:16px}
+.lb-group-header{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;padding:0 2px;display:flex;justify-content:space-between;align-items:center}
+.lb-group-header span{font-weight:400;font-size:10px}
+
+/* STATS */
+.chart-wrap{position:relative;width:100%;margin-bottom:10px}
+.stat-summary{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
+.ss-box{background:var(--w);border:1px solid var(--light);border-radius:var(--rs);padding:12px;text-align:center}
+.ss-num{font-family:'DM Mono',monospace;font-size:18px;font-weight:500}
+.ss-lbl{font-size:10px;color:var(--muted);margin-top:2px}
+.legend-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)}
+.legend-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+
+/* FABs */
+.fab-row{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:200;max-width:430px;width:100%;padding:0 16px}
+.fab{flex:1;padding:14px 10px;border-radius:14px;border:none;font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 16px rgba(0,0,0,.1)}
+.fab:active{transform:scale(.96)}
+.fab.water{background:var(--black);color:var(--w)}
+.fab.urine{background:var(--w);color:var(--black);border:1.5px solid var(--light)}
+
+/* MODALS */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:400;align-items:flex-end;justify-content:center;backdrop-filter:blur(3px)}
+.modal-overlay.open{display:flex}
+.modal{background:var(--w);border-radius:20px 20px 0 0;padding:20px 20px 36px;width:100%;max-width:430px;animation:up .3s cubic-bezier(.4,0,.2,1)}
+@keyframes up{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.m-handle{width:36px;height:4px;border-radius:2px;background:var(--light);margin:0 auto 18px}
+.m-title{font-size:17px;font-weight:700;margin-bottom:16px;text-align:center}
+.m-label{font-size:12px;font-weight:500;color:var(--muted);margin-bottom:6px}
+.m-input-wrap{display:flex;align-items:center;background:var(--off);border:1.5px solid var(--light);border-radius:var(--rs);overflow:hidden;margin-bottom:10px;transition:border-color .2s}
+.m-input-wrap:focus-within{border-color:var(--black)}
+.m-input-wrap input{flex:1;background:none;border:none;padding:12px 14px;color:var(--black);font-family:'DM Mono',monospace;font-size:20px;outline:none}
+.m-input-wrap input[type=time]{font-size:16px}
+.m-unit{padding:0 14px;font-size:13px;color:var(--muted);font-weight:500}
+.preset-row{display:flex;gap:6px;margin-bottom:12px}
+.p-btn{flex:1;padding:9px 0;border-radius:8px;border:1.5px solid var(--light);background:var(--w);color:var(--dark);font-size:12px;font-weight:500;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .15s}
+.p-btn:active{background:var(--black);color:var(--w);border-color:var(--black)}
+.uc-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.uc-swatch{width:34px;height:34px;border-radius:50%;cursor:pointer;border:2.5px solid transparent;transition:all .15s}
+.uc-swatch.sel{border-color:var(--black);transform:scale(1.15)}
+.c-label{font-size:11px;color:var(--muted);margin-bottom:10px}
+.m-btn{width:100%;padding:14px;border-radius:var(--rs);border:none;font-family:'Outfit',sans-serif;font-size:15px;font-weight:600;cursor:pointer;background:var(--black);color:var(--w);margin-top:4px;transition:opacity .15s}
+.m-btn:active{opacity:.8}
+.m-cancel{width:100%;padding:12px;background:none;border:none;color:var(--muted);font-family:'Outfit',sans-serif;font-size:14px;cursor:pointer;margin-top:6px}
+
+/* TIMING MESSAGE BOX */
+.timing-msg{border-radius:var(--rs);padding:12px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px;animation:fadeIn .3s ease}
+.timing-msg.good{background:var(--green-l);border:1px solid #a7f3d0}
+.timing-msg.warn{background:var(--orange-l);border:1px solid #fed7aa}
+.timing-msg.bad{background:var(--red-l);border:1px solid #fecaca}
+.timing-msg-icon{font-size:20px}
+.timing-msg-text{flex:1}
+.timing-msg-title{font-size:13px;font-weight:700}
+.timing-msg-title.good{color:#065f46}
+.timing-msg-title.warn{color:#9a3412}
+.timing-msg-title.bad{color:#991b1b}
+.timing-msg-sub{font-size:11px;margin-top:2px}
+.timing-msg-sub.good{color:#047857}
+.timing-msg-sub.warn{color:#c2410c}
+.timing-msg-sub.bad{color:#dc2626}
+
+/* ALARM BANNERS */
+.alarm-banner{position:fixed;top:65px;left:50%;transform:translateX(-50%) translateY(-130px);width:calc(100% - 28px);max-width:402px;background:var(--black);color:var(--w);border-radius:var(--r);padding:14px 16px;display:flex;align-items:center;gap:12px;z-index:500;transition:transform .45s cubic-bezier(.175,.885,.32,1.275);box-shadow:0 8px 28px rgba(0,0,0,.2)}
+.alarm-banner.show{transform:translateX(-50%) translateY(0)}
+.b-icon{font-size:24px;animation:swing .5s ease infinite alternate}
+@keyframes swing{from{transform:rotate(-10deg)}to{transform:rotate(10deg)}}
+.b-text{flex:1}
+.b-title{font-size:14px;font-weight:600}
+.b-body{font-size:11px;color:rgba(255,255,255,.55);margin-top:2px}
+.b-btns{display:flex;gap:6px}
+.b-btn{padding:7px 12px;border-radius:8px;border:none;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;cursor:pointer}
+.b-btn.snz{background:rgba(255,255,255,.12);color:var(--w)}
+.b-btn.dis{background:var(--w);color:var(--black)}
+
+/* FULL SCREEN ALARM */
+.ring-overlay{display:none;position:fixed;inset:0;background:var(--black);z-index:1000;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px}
+.ring-overlay.show{display:flex}
+.big-bell{font-size:80px;animation:bigswing .6s ease infinite alternate;margin-bottom:28px}
+@keyframes bigswing{from{transform:rotate(-12deg) scale(1)}to{transform:rotate(12deg) scale(1.08)}}
+.ro-title{font-size:30px;font-weight:700;color:var(--w);margin-bottom:8px;letter-spacing:-.5px}
+.ro-sub{font-size:15px;color:rgba(255,255,255,.45);margin-bottom:48px}
+.ro-btns{display:flex;gap:12px;width:100%}
+.ro-btn{flex:1;padding:16px;border-radius:14px;border:none;font-family:'Outfit',sans-serif;font-size:15px;font-weight:600;cursor:pointer}
+.ro-btn:active{transform:scale(.96)}
+.ro-btn.snz{background:rgba(255,255,255,.1);color:var(--w)}
+.ro-btn.log{background:var(--w);color:var(--black)}
+
+/* DIVIDER */
+.divider{height:1px;background:var(--light);margin:12px 0}
+</style>
+</head>
+<body>
+  
+<div class="topbar">
+  <div class="logo-wrap">
+    <div class="app-name">HydroLog</div>
+  </div>
+  <div class="top-date" id="topDate"></div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" id="tab-dashboard" onclick="showTab('dashboard')">Home</div>
+  <div class="tab" id="tab-calendar" onclick="showTab('calendar')">Calendar</div>
+  <div class="tab" id="tab-logbook" onclick="showTab('logbook')">Logbook</div>
+  <div class="tab" id="tab-stats" onclick="showTab('stats')">Stats</div>
+  <div class="tab" id="tab-alarms" onclick="showTab('alarms')">Alarms</div>
+</div>
+
+<!-- ═══ DASHBOARD ═══ -->
+<div class="screen active" id="screen-dashboard">
+  <div class="ph">
+    <div class="ph-title" id="greeting">Good morning</div>
+    <div class="ph-sub" id="dashSub">Track your hydration today</div>
+  </div>
+
+  <div id="timingMsgBox"></div>
+
+  <div class="two-rings">
+    <div class="card" style="padding:12px">
+      <div class="sec-lbl" style="margin-bottom:4px">Water</div>
+      <div class="ring-wrap" style="padding:4px 0">
+        <div class="ring-svg-wrap">
+          <svg class="ring-svg" viewBox="0 0 140 140">
+            <circle class="ring-track" cx="70" cy="70" r="56"/>
+            <circle class="ring-fill" cx="70" cy="70" r="56" stroke="var(--blue)" id="wRing" stroke-dasharray="351.86" stroke-dashoffset="351.86"/>
+          </svg>
+          <div class="ring-center">
+            <div class="ring-val" id="wVal" style="color:var(--blue);font-size:22px">0</div>
+            <div class="ring-sub" style="font-size:10px">/ <span id="wTargetLbl">2000</span></div>
+          </div>
+        </div>
+        <div class="quick-row">
+          <button class="qbtn water" onclick="quickAdd('water',150)">+150</button>
+          <button class="qbtn water" onclick="quickAdd('water',250)">+250</button>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="padding:12px">
+      <div class="sec-lbl" style="margin-bottom:4px">Urine</div>
+      <div class="ring-wrap" style="padding:4px 0">
+        <div class="ring-svg-wrap">
+          <svg class="ring-svg" viewBox="0 0 140 140">
+            <circle class="ring-track" cx="70" cy="70" r="56"/>
+            <circle class="ring-fill" cx="70" cy="70" r="56" stroke="var(--amber)" id="uRing" stroke-dasharray="351.86" stroke-dashoffset="351.86"/>
+          </svg>
+          <div class="ring-center">
+            <div class="ring-val" id="uVal" style="color:var(--amber);font-size:22px">0</div>
+            <div class="ring-sub" style="font-size:10px">ml today</div>
+          </div>
+        </div>
+        <div class="quick-row">
+          <button class="qbtn urine" onclick="quickAdd('urine',100)">+100</button>
+          <button class="qbtn urine" onclick="quickAdd('urine',200)">+200</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat-box">
+      <div style="font-size:16px;margin-bottom:5px">💧</div>
+      <div class="stat-num" id="wCnt" style="color:var(--blue)">0</div>
+      <div class="stat-desc">Water entries</div>
+    </div>
+    <div class="stat-box">
+      <div style="font-size:16px;margin-bottom:5px">🟡</div>
+      <div class="stat-num" id="uCnt" style="color:var(--amber)">0</div>
+      <div class="stat-desc">Urine entries</div>
+    </div>
+  </div>
+
+  <div class="sec-lbl">Fluid balance</div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:13px;color:var(--blue);font-weight:500">💧 <span id="balW">0</span> ml</span>
+      <span style="font-size:12px;color:var(--muted)" id="balSt">—</span>
+      <span style="font-size:13px;color:var(--amber);font-weight:500">🟡 <span id="balU">0</span> ml</span>
+    </div>
+    <div class="balance-bar">
+      <div class="bal-w" id="balWBar" style="width:50%"></div>
+      <div class="bal-u" id="balUBar" style="width:50%"></div>
+    </div>
+    <div class="bal-lbls"><span>Intake</span><span>Output</span></div>
+  </div>
+
+  <div class="sec-lbl">Today's log</div>
+  <div id="dashLogList"></div>
+</div>
+
+<!-- ═══ CALENDAR ═══ -->
+<div class="screen" id="screen-calendar">
+  <div class="ph">
+    <div class="ph-title">Calendar</div>
+    <div class="ph-sub">Tap a date to see its entries</div>
+  </div>
+  <div class="card">
+    <div class="cal-nav">
+      <button class="cal-nav-btn" onclick="calPrev()">‹</button>
+      <div class="cal-month" id="calMonthLabel"></div>
+      <button class="cal-nav-btn" onclick="calNext()">›</button>
+    </div>
+    <div class="cal-grid" id="calDow"></div>
+    <div class="cal-grid" id="calGrid" style="margin-top:4px"></div>
+  </div>
+  <div class="cal-selected-info" id="calDayDetail" style="display:none">
+    <div class="cal-selected-date" id="calDayTitle"></div>
+    <div id="calDayLogs"></div>
+  </div>
+</div>
+
+<!-- ═══ LOGBOOK ═══ -->
+<div class="screen" id="screen-logbook">
+  <div class="ph">
+    <div class="ph-title">Logbook</div>
+    <div class="ph-sub">Complete history of all entries</div>
+  </div>
+  <div class="lb-filter">
+    <button class="lb-filter-btn active" onclick="setLBFilter('day',this)">Day</button>
+    <button class="lb-filter-btn" onclick="setLBFilter('week',this)">Week</button>
+    <button class="lb-filter-btn" onclick="setLBFilter('month',this)">Month</button>
+    <button class="lb-filter-btn" onclick="setLBFilter('year',this)">Year</button>
+    <button class="lb-filter-btn" onclick="setLBFilter('all',this)">All Time</button>
+  </div>
+  <div id="logbookContent"></div>
+</div>
+
+<!-- ═══ STATS ═══ -->
+<div class="screen" id="screen-stats">
+  <div class="ph">
+    <div class="ph-title">Statistics</div>
+    <div class="ph-sub">Analyse your hydration patterns</div>
+  </div>
+
+  <div class="lb-filter" style="margin-bottom:12px">
+    <button class="lb-filter-btn active" onclick="setStatsFilter('today',this)">Today</button>
+    <button class="lb-filter-btn" onclick="setStatsFilter('week',this)">7 Days</button>
+    <button class="lb-filter-btn" onclick="setStatsFilter('month',this)">30 Days</button>
+  </div>
+
+  <div class="sec-lbl">Urine timing analysis</div>
+  <div class="legend-row">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Within 2h (good)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div>2–3h (caution)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>3h+ (alert)</div>
+  </div>
+  <div class="card">
+    <div class="chart-wrap" style="height:220px"><canvas id="timingChart"></canvas></div>
+  </div>
+
+  <div class="stat-summary" id="statSummary"></div>
+
+  <div class="sec-lbl">Water vs Urine (ml)</div>
+  <div class="card">
+    <div class="chart-wrap" style="height:200px"><canvas id="balanceChart"></canvas></div>
+  </div>
+
+  <div class="sec-lbl">Daily totals</div>
+  <div class="card">
+    <div class="chart-wrap" style="height:200px"><canvas id="dailyChart"></canvas></div>
+  </div>
+</div>
+
+<!-- ═══ ALARMS ═══ -->
+<div class="screen" id="screen-alarms">
+  <div class="ph">
+    <div class="ph-title">Alarms</div>
+    <div class="ph-sub">Urine pass reminders</div>
+  </div>
+
+  <div class="alarm-card">
+    <div class="alarm-header">
+      <div class="alarm-title-text">Next reminder</div>
+      <div class="alarm-badge on" id="alBadge">ACTIVE</div>
+    </div>
+    <div class="alarm-countdown" id="alCD">--:--</div>
+    <div class="alarm-cd-sub" id="alSub">Configure below</div>
+    <div class="alarm-prog"><div class="alarm-prog-fill" id="alProg" style="width:0%"></div></div>
+    <div class="alarm-btns">
+      <button class="a-btn prim" onclick="resetAlarm()">↺ Reset</button>
+      <button class="a-btn sec" onclick="snoozeAlarm()">Snooze 15m</button>
+      <button class="a-btn stop" id="alTogBtn" onclick="toggleAlarm()">Stop</button>
+    </div>
+  </div>
+
+  <div class="sec-lbl">Interval</div>
+  <div class="card">
+    <div class="iv-grid" id="ivGrid">
+      <div class="iv-opt" data-h="1" onclick="setIv(1)"><div class="iv-num">1</div><div class="iv-lbl">hour</div></div>
+      <div class="iv-opt" data-h="2" onclick="setIv(2)"><div class="iv-num">2</div><div class="iv-lbl">hours</div></div>
+      <div class="iv-opt sel" data-h="3" onclick="setIv(3)"><div class="iv-num">3</div><div class="iv-lbl">hours</div></div>
+      <div class="iv-opt" data-h="4" onclick="setIv(4)"><div class="iv-num">4</div><div class="iv-lbl">hours</div></div>
+    </div>
+    <div class="custom-row">
+      <input type="number" id="customH" placeholder="Custom" min="0.5" max="12" step="0.5">
+      <span class="unit">hours</span>
+      <button class="apply-btn" onclick="applyCustom()">Set</button>
+    </div>
+  </div>
+
+  <div class="sec-lbl">Settings</div>
+  <div class="s-item">
+    <div class="s-left"><span class="s-icon">🔔</span><div><div class="s-name">Enable Alarm</div><div class="s-sub">Sound + notification</div></div></div>
+    <div class="toggle on" id="togMaster" onclick="toggleAlarm()"></div>
+  </div>
+  <div class="s-item">
+    <div class="s-left"><span class="s-icon">📳</span><div><div class="s-name">Vibration</div><div class="s-sub">Vibrate on alarm</div></div></div>
+    <div class="toggle on" id="togVibe" onclick="toggleVibe()"></div>
+  </div>
+  <div class="s-item">
+    <div class="s-left"><span class="s-icon">🌙</span><div><div class="s-name">Do Not Disturb</div><div class="s-sub">Silence 10pm–7am</div></div></div>
+    <div class="toggle" id="togDND" onclick="toggleDND()"></div>
+  </div>
+  <div class="s-item">
+    <div class="s-left"><span class="s-icon">💧</span><div><div class="s-name">Daily Water Target</div><div class="s-sub">ml per day</div></div></div>
+    <input class="s-input" type="number" id="targetIn" value="2000" min="500" max="5000" step="100" onchange="saveTarget()">
+  </div>
+  <div class="card" style="border:1.5px dashed var(--mid);margin-top:6px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <span style="font-size:22px">🔐</span>
+      <div style="flex:1"><div style="font-size:13px;font-weight:600;margin-bottom:2px">Notification Permission</div><div style="font-size:11px;color:var(--muted)" id="permSt">Required for alarms</div></div>
+      <button onclick="reqPerm()" style="padding:8px 14px;border-radius:8px;background:var(--black);color:var(--w);border:none;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;cursor:pointer">Allow</button>
+    </div>
+  </div>
+</div>
+
+<!-- FABs -->
+<div class="fab-row" id="fabRow">
+  <button class="fab water" onclick="openModal('water')">💧 Water</button>
+  <button class="fab urine" onclick="openModal('urine')">🟡 Urine</button>
+</div>
+
+<!-- Water Modal -->
+<div class="modal-overlay" id="waterModal">
+  <div class="modal">
+    <div class="m-handle"></div>
+    <div class="m-title">Log Water Intake</div>
+    <div class="m-label">Amount</div>
+    <div class="m-input-wrap"><input type="number" id="wAmt" placeholder="250" min="10" max="2000" step="10"><span class="m-unit">ml</span></div>
+    <div class="preset-row">
+      <button class="p-btn" onclick="document.getElementById('wAmt').value=150">150</button>
+      <button class="p-btn" onclick="document.getElementById('wAmt').value=250">250</button>
+      <button class="p-btn" onclick="document.getElementById('wAmt').value=350">350</button>
+      <button class="p-btn" onclick="document.getElementById('wAmt').value=500">500ml</button>
+    </div>
+    <div class="m-label">Date & Time</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+      <div class="m-input-wrap" style="margin-bottom:0"><input type="date" id="wDate" style="font-size:13px;padding:10px 10px"></div>
+      <div class="m-input-wrap" style="margin-bottom:0"><input type="time" id="wTime"></div>
+    </div>
+    <button class="m-btn" onclick="logWater()">+ Log Water</button>
+    <button class="m-cancel" onclick="closeModal('water')">Cancel</button>
+  </div>
+</div>
+
+<!-- Urine Modal -->
+<div class="modal-overlay" id="urineModal">
+  <div class="modal">
+    <div class="m-handle"></div>
+    <div class="m-title">Log Urine Output</div>
+    <div class="m-label">Volume</div>
+    <div class="m-input-wrap"><input type="number" id="uAmt" placeholder="200" min="10" max="1000" step="10"><span class="m-unit">ml</span></div>
+    <div class="preset-row">
+      <button class="p-btn" onclick="document.getElementById('uAmt').value=100">100</button>
+      <button class="p-btn" onclick="document.getElementById('uAmt').value=200">200</button>
+      <button class="p-btn" onclick="document.getElementById('uAmt').value=300">300</button>
+      <button class="p-btn" onclick="document.getElementById('uAmt').value=400">400ml</button>
+    </div>
+    <div class="m-label">Urine color</div>
+    <div class="uc-row" id="ucRow">
+      <div class="uc-swatch sel" style="background:#fef9c3" data-c="#fef9c3" data-l="Pale" onclick="pickColor(this)"></div>
+      <div class="uc-swatch" style="background:#fde047" data-c="#fde047" data-l="Yellow" onclick="pickColor(this)"></div>
+      <div class="uc-swatch" style="background:#facc15" data-c="#facc15" data-l="Dark yellow" onclick="pickColor(this)"></div>
+      <div class="uc-swatch" style="background:#d97706" data-c="#d97706" data-l="Amber" onclick="pickColor(this)"></div>
+      <div class="uc-swatch" style="background:#92400e" data-c="#92400e" data-l="Brown" onclick="pickColor(this)"></div>
+      <div class="uc-swatch" style="background:#f0fdf4;border:1px solid #d1fae5" data-c="#f0fdf4" data-l="Clear" onclick="pickColor(this)"></div>
+      <div class="uc-swatch" style="background:#fecaca" data-c="#fecaca" data-l="Pinkish" onclick="pickColor(this)"></div>
+    </div>
+    <div class="c-label" id="cLbl">Selected: Pale</div>
+    <div class="m-label">Date & Time</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+      <div class="m-input-wrap" style="margin-bottom:0"><input type="date" id="uDate" style="font-size:13px;padding:10px 10px"></div>
+      <div class="m-input-wrap" style="margin-bottom:0"><input type="time" id="uTime"></div>
+    </div>
+    <button class="m-btn" onclick="logUrine()">+ Log Urine</button>
+    <button class="m-cancel" onclick="closeModal('urine')">Cancel</button>
+  </div>
+</div>
+
+<!-- Full screen alarm -->
+<div class="ring-overlay" id="ringOverlay">
+  <div class="big-bell">🔔</div>
+  <div class="ro-title">Time to Pass!</div>
+  <div class="ro-sub" id="roSub">Your reminder has fired</div>
+  <div class="ro-btns">
+    <button class="ro-btn snz" onclick="snoozeAlarm()">Snooze 15m</button>
+    <button class="ro-btn log" onclick="dismissAndLog()">Log Now →</button>
+  </div>
+</div>
+
+<!-- Banner -->
+<div class="alarm-banner" id="alBanner">
+  <div class="b-icon">🔔</div>
+  <div class="b-text">
+    <div class="b-title">Time to pass urine!</div>
+    <div class="b-body" id="bBody">Your interval has elapsed.</div>
+  </div>
+  <div class="b-btns">
+    <button class="b-btn snz" onclick="snoozeAlarm()">+15m</button>
+    <button class="b-btn dis" onclick="dismissBanner()">Done</button>
+  </div>
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────
+let S = {
+  waterTarget:2000, iv:3, alarmOn:true, vibeOn:true, dndOn:false,
+  logs:[], alarmStart:null, selColor:'#fef9c3', selColorLbl:'Pale'
+};
+let alTimer=null, cdTimer=null, bannerTO=null, audioCtx=null;
+let nextId=Date.now();
+let calYear=new Date().getFullYear(), calMonth=new Date().getMonth();
+let calSelDate=null;
+let lbFilter='day', statsFilter='today';
+let timingChart=null, balanceChart=null, dailyChart=null;
+
+// ── STORAGE ────────────────────────────────────────────────────
+function load(){try{const d=localStorage.getItem('hl4');if(d)S={...S,...JSON.parse(d)};}catch(e){}}
+function save(){try{localStorage.setItem('hl4',JSON.stringify(S));}catch(e){}}
+
+// ── BOOT ───────────────────────────────────────────────────────
+function boot(){
+  load();
+  document.getElementById('targetIn').value=S.waterTarget;
+  applyIvSel(S.iv); updateToggles(); renderAll();
+  updateClock(); setInterval(updateClock,10000);
+  document.getElementById('topDate').textContent=
+    new Date().toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'});
+  const h=new Date().getHours();
+  document.getElementById('greeting').textContent=
+    h<12?'Good morning':h<17?'Good afternoon':'Good evening';
+  if(S.alarmOn){if(S.alarmStart)schedFromState();else startCycle();}
+  startCD(); checkPerm();
+  renderCalendar(); renderLogbook(); renderStats();
+}
+
+function updateClock(){
+  const n=new Date();
+  document.getElementById('statusTime').textContent=
+    String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
+}
+
+// ── TABS ───────────────────────────────────────────────────────
+function showTab(t){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.getElementById('screen-'+t).classList.add('active');
+  document.getElementById('tab-'+t).classList.add('active');
+  const hideFab=['logbook','stats','alarms'];
+  document.getElementById('fabRow').style.display=hideFab.includes(t)?'none':'flex';
+  if(t==='calendar') renderCalendar();
+  if(t==='logbook') renderLogbook();
+  if(t==='stats') renderStats();
+}
+
+// ── DATA HELPERS ───────────────────────────────────────────────
+function dateStr(ts){return new Date(ts).toDateString();}
+function logsForDate(ds){return S.logs.filter(l=>dateStr(l.ts)===ds);}
+function todayLogs(){return logsForDate(new Date().toDateString());}
+function todayW(){return todayLogs().filter(l=>l.type==='water').reduce((a,l)=>a+l.amount,0);}
+function todayU(){return todayLogs().filter(l=>l.type==='urine').reduce((a,l)=>a+l.amount,0);}
+
+// ── TIMING ANALYSIS ────────────────────────────────────────────
+function getUrineTiming(logs){
+  // Returns array of {ts, gapMins, status} for urine entries
+  const urine=[...logs].filter(l=>l.type==='urine').sort((a,b)=>a.ts-b.ts);
+  return urine.map((u,i)=>{
+    if(i===0) return {...u, gapMins:null, status:'first'};
+    const gap=(u.ts-urine[i-1].ts)/60000;
+    let status='good';
+    if(gap>180) status='bad';
+    else if(gap>120) status='warn';
+    return {...u, gapMins:Math.round(gap), status};
+  });
+}
+
+function getLastUrineGap(){
+  const urine=[...S.logs].filter(l=>l.type==='urine').sort((a,b)=>b.ts-a.ts);
+  if(!urine.length) return null;
+  const gap=(Date.now()-urine[0].ts)/60000;
+  return gap;
+}
+
+function timingColor(status){
+  return status==='good'?'var(--green)':status==='warn'?'var(--orange)':'var(--red)';
+}
+
+function renderTimingMsg(){
+  const box=document.getElementById('timingMsgBox');
+  const gap=getLastUrineGap();
+  if(gap===null){box.innerHTML='';return;}
+  let cls,icon,title,sub;
+  if(gap<=120){
+    cls='good';icon='✅';
+    title='You are on time!';
+    sub=`Last urine ${Math.round(gap)} min ago — keep it up!`;
+  } else if(gap<=180){
+    cls='warn';icon='⚠️';
+    title='A little late, Be Careful';
+    sub=`It has been ${Math.round(gap)} min — try to pass urine soon.`;
+  } else {
+    cls='bad';icon='🚨';
+    title='This is not a good habit';
+    sub=`${Math.round(gap)} min since last urine — please go now!`;
+  }
+  box.innerHTML=`<div class="timing-msg ${cls}">
+    <div class="timing-msg-icon">${icon}</div>
+    <div class="timing-msg-text">
+      <div class="timing-msg-title ${cls}">${title}</div>
+      <div class="timing-msg-sub ${cls}">${sub}</div>
+    </div>
+  </div>`;
+}
+
+// ── RENDER DASHBOARD ───────────────────────────────────────────
+function renderAll(){
+  const w=todayW(), u=todayU(), logs=todayLogs();
+  const C=351.86;
+  const wp=Math.min(w/S.waterTarget,1);
+  document.getElementById('wRing').style.strokeDashoffset=C-wp*C;
+  document.getElementById('wVal').textContent=w.toLocaleString();
+  document.getElementById('wTargetLbl').textContent=S.waterTarget.toLocaleString();
+  const ut=Math.max(S.waterTarget*.6,500);
+  document.getElementById('uRing').style.strokeDashoffset=C-Math.min(u/ut,1)*C;
+  document.getElementById('uVal').textContent=u.toLocaleString();
+  document.getElementById('wCnt').textContent=logs.filter(l=>l.type==='water').length;
+  document.getElementById('uCnt').textContent=logs.filter(l=>l.type==='urine').length;
+  document.getElementById('balW').textContent=w.toLocaleString();
+  document.getElementById('balU').textContent=u.toLocaleString();
+  const tot=w+u;
+  document.getElementById('balWBar').style.width=tot>0?(w/tot*100)+'%':'50%';
+  document.getElementById('balUBar').style.width=tot>0?(u/tot*100)+'%':'50%';
+  const diff=w-u;
+  document.getElementById('balSt').textContent=
+    diff>300?`+${diff}ml retained`:diff<-200?`${diff}ml deficit`:'Balanced';
+  document.getElementById('dashSub').textContent=
+    logs.length===0?'No entries yet — start logging!':
+    `${logs.length} entr${logs.length===1?'y':'ies'} today`;
+  renderTimingMsg();
+  renderDashLog(logs);
+}
+
+function renderDashLog(logs){
+  const el=document.getElementById('dashLogList');
+  const sorted=[...logs].sort((a,b)=>b.ts-a.ts).slice(0,5);
+  if(!sorted.length){el.innerHTML='<div class="empty"><div class="empty-icon">📋</div>No entries today</div>';return;}
+  const timing=getUrineTiming(logs);
+  const timingMap={};timing.forEach(t=>timingMap[t.id]=t);
+  el.innerHTML=sorted.map(l=>logItemHTML(l,timingMap[l.id])).join('');
+  if(logs.length>5){
+    el.innerHTML+=`<div style="text-align:center;padding:8px;font-size:12px;color:var(--muted);cursor:pointer" onclick="showTab('logbook')">View all ${logs.length} entries →</div>`;
+  }
+}
+
+function logItemHTML(l, timingInfo){
+  const t=new Date(l.ts).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  const dot=l.color?`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${l.color};margin-right:3px;vertical-align:middle"></span>`:'';
+  let timingBadge='';
+  if(timingInfo && timingInfo.gapMins!==null && l.type==='urine'){
+    const {status,gapMins}=timingInfo;
+    const lbl=status==='good'?'On time':status==='warn'?'A bit late':'Overdue';
+    timingBadge=`<div class="timing-badge ${status}">${lbl} · ${gapMins}m gap</div>`;
+  }
+  return `<div class="log-item">
+    <div class="l-dot ${l.type}"></div>
+    <div class="l-info">
+      <div class="l-type">${l.type==='water'?'💧 Water':'🟡 Urine'}</div>
+      <div class="l-meta">${t}${l.colorLbl?' · '+dot+l.colorLbl:''}</div>
+      ${timingBadge}
+    </div>
+    <div class="l-amt" style="color:${l.type==='water'?'var(--blue)':'var(--amber)'}">${l.amount} ml</div>
+    <div class="l-del" onclick="delLog(${l.id})">✕</div>
+  </div>`;
+}
+
+// ── CALENDAR ───────────────────────────────────────────────────
+function renderCalendar(){
+  const dows=['Su','Mo','Tu','We','Th','Fr','Sa'];
+  document.getElementById('calDow').innerHTML=dows.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  document.getElementById('calMonthLabel').textContent=
+    new Date(calYear,calMonth,1).toLocaleDateString('en-IN',{month:'long',year:'numeric'});
+
+  const first=new Date(calYear,calMonth,1).getDay();
+  const days=new Date(calYear,calMonth+1,0).getDate();
+  const today=new Date();
+
+  // Find dates that have data
+  const datesWithData=new Set(S.logs.map(l=>{const d=new Date(l.ts);return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;}));
+
+  let html='';
+  for(let i=0;i<first;i++) html+=`<div class="cal-day empty-day"></div>`;
+  for(let d=1;d<=days;d++){
+    const isToday=d===today.getDate()&&calMonth===today.getMonth()&&calYear===today.getFullYear();
+    const isSel=calSelDate&&calSelDate.d===d&&calSelDate.m===calMonth&&calSelDate.y===calYear;
+    const key=`${calYear}-${calMonth}-${d}`;
+    const hasData=datesWithData.has(key);
+    const cls=['cal-day',isToday?'today':'',isSel?'selected':'',hasData?'has-data':''].filter(Boolean).join(' ');
+    html+=`<div class="${cls}" onclick="calSelectDay(${d})"><span class="cal-day-num">${d}</span></div>`;
+  }
+  document.getElementById('calGrid').innerHTML=html;
+  if(calSelDate) renderCalDay();
+}
+
+function calPrev(){calMonth--;if(calMonth<0){calMonth=11;calYear--;}renderCalendar();}
+function calNext(){calMonth++;if(calMonth>11){calMonth=0;calYear++;}renderCalendar();}
+
+function calSelectDay(d){
+  calSelDate={d,m:calMonth,y:calYear};
+  renderCalendar();
+  renderCalDay();
+}
+
+function renderCalDay(){
+  const {d,m,y}=calSelDate;
+  const date=new Date(y,m,d);
+  const ds=date.toDateString();
+  const logs=logsForDate(ds);
+  document.getElementById('calDayTitle').textContent=
+    date.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const detail=document.getElementById('calDayDetail');
+  detail.style.display='block';
+  if(!logs.length){
+    document.getElementById('calDayLogs').innerHTML='<div style="font-size:13px;color:var(--muted);text-align:center;padding:16px">No entries on this day</div>';
+    return;
+  }
+  const timing=getUrineTiming(logs);
+  const timingMap={};timing.forEach(t=>timingMap[t.id]=t);
+  const w=logs.filter(l=>l.type==='water').reduce((a,l)=>a+l.amount,0);
+  const u=logs.filter(l=>l.type==='urine').reduce((a,l)=>a+l.amount,0);
+  document.getElementById('calDayLogs').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+      <div style="background:var(--blue-l);border-radius:8px;padding:10px;text-align:center">
+        <div style="font-family:'DM Mono',monospace;font-size:18px;font-weight:500;color:var(--blue)">${w}</div>
+        <div style="font-size:11px;color:var(--muted)">ml water</div>
+      </div>
+      <div style="background:#fef3c7;border-radius:8px;padding:10px;text-align:center">
+        <div style="font-family:'DM Mono',monospace;font-size:18px;font-weight:500;color:var(--amber)">${u}</div>
+        <div style="font-size:11px;color:var(--muted)">ml urine</div>
+      </div>
+    </div>
+    ${[...logs].sort((a,b)=>a.ts-b.ts).map(l=>logItemHTML(l,timingMap[l.id])).join('')}
+  `;
+}
+
+// ── LOGBOOK ────────────────────────────────────────────────────
+function setLBFilter(f,el){
+  lbFilter=f;
+  document.querySelectorAll('.lb-filter-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  renderLogbook();
+}
+
+function renderLogbook(){
+  const el=document.getElementById('logbookContent');
+  if(!S.logs.length){el.innerHTML='<div class="empty"><div class="empty-icon">📚</div>No entries yet</div>';return;}
+
+  const now=new Date();
+  let filtered=[...S.logs];
+
+  if(lbFilter==='day'){
+    filtered=filtered.filter(l=>dateStr(l.ts)===now.toDateString());
+  } else if(lbFilter==='week'){
+    const w=new Date(now); w.setDate(now.getDate()-7);
+    filtered=filtered.filter(l=>l.ts>=w.getTime());
+  } else if(lbFilter==='month'){
+    filtered=filtered.filter(l=>{const d=new Date(l.ts);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();});
+  } else if(lbFilter==='year'){
+    filtered=filtered.filter(l=>new Date(l.ts).getFullYear()===now.getFullYear());
+  }
+
+  if(!filtered.length){el.innerHTML='<div class="empty"><div class="empty-icon">📚</div>No entries for this period</div>';return;}
+
+  // Group by date
+  const groups={};
+  filtered.forEach(l=>{
+    const ds=dateStr(l.ts);
+    if(!groups[ds]) groups[ds]=[];
+    groups[ds].push(l);
+  });
+
+  const sortedDates=Object.keys(groups).sort((a,b)=>new Date(b)-new Date(a));
+  const timing=getUrineTiming(filtered);
+  const timingMap={};timing.forEach(t=>timingMap[t.id]=t);
+
+  el.innerHTML=sortedDates.map(ds=>{
+    const dayLogs=groups[ds].sort((a,b)=>b.ts-a.ts);
+    const w=dayLogs.filter(l=>l.type==='water').reduce((a,l)=>a+l.amount,0);
+    const u=dayLogs.filter(l=>l.type==='urine').reduce((a,l)=>a+l.amount,0);
+    const label=ds===now.toDateString()?'Today':new Date(ds).toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+    return `<div class="lb-group">
+      <div class="lb-group-header">
+        ${label}
+        <span>💧${w}ml · 🟡${u}ml</span>
+      </div>
+      ${dayLogs.map(l=>logItemHTML(l,timingMap[l.id])).join('')}
+    </div>`;
+  }).join('');
+}
+
+// ── STATS ──────────────────────────────────────────────────────
+function setStatsFilter(f,el){
+  statsFilter=f;
+  document.querySelectorAll('#screen-stats .lb-filter-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  renderStats();
+}
+
+function renderStats(){
+  const now=new Date();
+  let logs=[...S.logs];
+
+  if(statsFilter==='today'){
+    logs=logs.filter(l=>dateStr(l.ts)===now.toDateString());
+  } else if(statsFilter==='week'){
+    const w=new Date(now); w.setDate(now.getDate()-7);
+    logs=logs.filter(l=>l.ts>=w.getTime());
+  } else if(statsFilter==='month'){
+    const m=new Date(now); m.setDate(now.getDate()-30);
+    logs=logs.filter(l=>l.ts>=m.getTime());
+  }
+
+  const urineLogs=logs.filter(l=>l.type==='urine').sort((a,b)=>a.ts-b.ts);
+  const timing=getUrineTiming(logs);
+
+  // Summary
+  const good=timing.filter(t=>t.status==='good').length;
+  const warn=timing.filter(t=>t.status==='warn').length;
+  const bad=timing.filter(t=>t.status==='bad').length;
+  const totalW=logs.filter(l=>l.type==='water').reduce((a,l)=>a+l.amount,0);
+  const totalU=logs.filter(l=>l.type==='urine').reduce((a,l)=>a+l.amount,0);
+
+  document.getElementById('statSummary').innerHTML=`
+    <div class="ss-box"><div class="ss-num" style="color:var(--green)">${good}</div><div class="ss-lbl">On time</div></div>
+    <div class="ss-box"><div class="ss-num" style="color:var(--orange)">${warn}</div><div class="ss-lbl">Caution</div></div>
+    <div class="ss-box"><div class="ss-num" style="color:var(--red)">${bad}</div><div class="ss-lbl">Alert</div></div>
+  `;
+
+  // Timing chart — bar chart of gap durations colored by status
+  const timingLabels=timing.filter(t=>t.gapMins!==null).map((_,i)=>`Pass ${i+2}`);
+  const timingData=timing.filter(t=>t.gapMins!==null).map(t=>t.gapMins);
+  const timingColors=timing.filter(t=>t.gapMins!==null).map(t=>
+    t.status==='good'?'#10b981':t.status==='warn'?'#f97316':'#ef4444');
+
+  if(timingChart) timingChart.destroy();
+  const ctx1=document.getElementById('timingChart').getContext('2d');
+  if(timingData.length){
+    timingChart=new Chart(ctx1,{
+      type:'bar',
+      data:{
+        labels:timingLabels,
+        datasets:[{
+          label:'Gap (min)',
+          data:timingData,
+          backgroundColor:timingColors,
+          borderRadius:6,
+          borderSkipped:false,
+        }]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.raw} min gap`}}},
+        scales:{
+          x:{ticks:{color:'#8a8a85',font:{size:10}},grid:{display:false}},
+          y:{
+            ticks:{color:'#8a8a85',font:{size:10},callback:v=>v+'m'},
+            grid:{color:'rgba(0,0,0,0.05)'},
+            title:{display:true,text:'Minutes',color:'#8a8a85',font:{size:10}}
+          }
+        }
+      }
+    });
+  } else {
+    ctx1.clearRect(0,0,ctx1.canvas.width,ctx1.canvas.height);
+    ctx1.font='14px Outfit';ctx1.fillStyle='#8a8a85';ctx1.textAlign='center';
+    ctx1.fillText('Not enough data yet',ctx1.canvas.width/2,100);
+  }
+
+  // Balance chart
+  if(balanceChart) balanceChart.destroy();
+  const ctx2=document.getElementById('balanceChart').getContext('2d');
+  balanceChart=new Chart(ctx2,{
+    type:'doughnut',
+    data:{
+      labels:['Water intake','Urine output'],
+      datasets:[{data:[totalW||1,totalU||0],backgroundColor:['#3b82f6','#d97706'],borderWidth:0,hoverOffset:4}]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:c=>`${c.label}: ${c.raw} ml`}}
+      },
+      cutout:'65%'
+    }
+  });
+
+  // Daily totals chart — group by day
+  const dayGroups={};
+  logs.forEach(l=>{
+    const ds=new Date(l.ts).toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+    if(!dayGroups[ds]) dayGroups[ds]={w:0,u:0};
+    if(l.type==='water') dayGroups[ds].w+=l.amount;
+    else dayGroups[ds].u+=l.amount;
+  });
+  const dayLabels=Object.keys(dayGroups);
+  const dayW=dayLabels.map(d=>dayGroups[d].w);
+  const dayU=dayLabels.map(d=>dayGroups[d].u);
+
+  if(dailyChart) dailyChart.destroy();
+  const ctx3=document.getElementById('dailyChart').getContext('2d');
+  dailyChart=new Chart(ctx3,{
+    type:'bar',
+    data:{
+      labels:dayLabels,
+      datasets:[
+        {label:'Water',data:dayW,backgroundColor:'#3b82f6',borderRadius:4,borderSkipped:false},
+        {label:'Urine',data:dayU,backgroundColor:'#d97706',borderRadius:4,borderSkipped:false}
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{ticks:{color:'#8a8a85',font:{size:10},maxRotation:45},grid:{display:false}},
+        y:{ticks:{color:'#8a8a85',font:{size:10},callback:v=>v+'ml'},grid:{color:'rgba(0,0,0,0.05)'}}
+      }
+    }
+  });
+}
+
+// ── LOGGING ────────────────────────────────────────────────────
+function getTS(dateId, timeId){
+  const dv=document.getElementById(dateId).value;
+  const tv=document.getElementById(timeId).value;
+  if(!dv||!tv) return Date.now();
+  return new Date(`${dv}T${tv}`).getTime();
+}
+
+function setNow(dateId, timeId){
+  const n=new Date();
+  document.getElementById(dateId).value=n.toISOString().split('T')[0];
+  document.getElementById(timeId).value=
+    String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
+}
+
+function logWater(){
+  const a=parseInt(document.getElementById('wAmt').value);
+  if(!a||a<10) return alert('Min 10ml');
+  S.logs.push({id:nextId++,type:'water',amount:a,ts:getTS('wDate','wTime')});
+  save(); closeModal('water'); renderAll(); renderCalendar(); renderLogbook(); renderStats();
+}
+
+function logUrine(){
+  const a=parseInt(document.getElementById('uAmt').value);
+  if(!a||a<10) return alert('Min 10ml');
+  S.logs.push({id:nextId++,type:'urine',amount:a,ts:getTS('uDate','uTime'),color:S.selColor,colorLbl:S.selColorLbl});
+  save(); closeModal('urine'); renderAll(); renderCalendar(); renderLogbook(); renderStats();
+  if(S.alarmOn){clearAl();startCycle();}
+}
+
+function quickAdd(type,amount){
+  S.logs.push({id:nextId++,type,amount,ts:Date.now(),
+    color:type==='urine'?S.selColor:undefined,
+    colorLbl:type==='urine'?S.selColorLbl:undefined});
+  if(type==='urine'&&S.alarmOn){clearAl();startCycle();}
+  save(); renderAll(); renderCalendar(); renderLogbook(); renderStats();
+  const el=event.target; el.style.opacity='.4'; setTimeout(()=>el.style.opacity='',200);
+}
+
+function delLog(id){
+  S.logs=S.logs.filter(l=>l.id!==id);
+  save(); renderAll(); renderCalendar(); renderLogbook(); renderStats();
+}
+
+// ── MODALS ─────────────────────────────────────────────────────
+function openModal(t){
+  setNow(t==='water'?'wDate':'uDate', t==='water'?'wTime':'uTime');
+  document.getElementById(t==='water'?'wAmt':'uAmt').value='';
+  document.getElementById(t+'Modal').classList.add('open');
+}
+function closeModal(t){document.getElementById(t+'Modal').classList.remove('open');}
+['waterModal','urineModal'].forEach(id=>{
+  document.getElementById(id).addEventListener('click',function(e){
+    if(e.target===this) closeModal(id.replace('Modal',''));
+  });
+});
+function pickColor(el){
+  document.querySelectorAll('.uc-swatch').forEach(s=>s.classList.remove('sel'));
+  el.classList.add('sel');
+  S.selColor=el.dataset.c; S.selColorLbl=el.dataset.l;
+  document.getElementById('cLbl').textContent='Selected: '+el.dataset.l;
+}
+
+// ── ALARM ──────────────────────────────────────────────────────
+function setIv(h){S.iv=h;applyIvSel(h);save();if(S.alarmOn){clearAl();startCycle();}}
+function applyIvSel(h){document.querySelectorAll('.iv-opt').forEach(e=>e.classList.toggle('sel',parseFloat(e.dataset.h)===h));}
+function applyCustom(){
+  const v=parseFloat(document.getElementById('customH').value);
+  if(!v||v<.5||v>12) return alert('0.5–12 hours');
+  S.iv=v; document.querySelectorAll('.iv-opt').forEach(e=>e.classList.remove('sel'));
+  save(); if(S.alarmOn){clearAl();startCycle();} document.getElementById('customH').value='';
+}
+function startCycle(){S.alarmStart=Date.now();save();alTimer=setTimeout(fireAlarm,S.iv*3600000);}
+function schedFromState(){
+  if(!S.alarmStart){startCycle();return;}
+  const rem=S.iv*3600000-(Date.now()-S.alarmStart);
+  if(rem<=0){fireAlarm();return;} alTimer=setTimeout(fireAlarm,rem);
+}
+function clearAl(){if(alTimer){clearTimeout(alTimer);alTimer=null;}S.alarmStart=null;}
+function fireAlarm(){
+  if(S.dndOn){const h=new Date().getHours();if(h>=22||h<7){startCycle();return;}}
+  playSound();
+  if(S.vibeOn&&navigator.vibrate) navigator.vibrate([500,200,500,200,500]);
+  document.getElementById('roSub').textContent=`${S.iv}h have passed`;
+  document.getElementById('ringOverlay').classList.add('show');
+  document.getElementById('bBody').textContent=`Every ${S.iv}h reminder — log your urine output.`;
+  document.getElementById('alBanner').classList.add('show');
+  if(bannerTO) clearTimeout(bannerTO);
+  bannerTO=setTimeout(dismissBanner,10000);
+  if(Notification.permission==='granted'){
+    try{new Notification('🔔 HydroLog — Time to Pass!',{body:`${S.iv}h elapsed. Please record your urine output.`,tag:'hl-alarm'});}catch(e){}
+  }
+  startCycle();
+}
+function playSound(){
+  try{
+    audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    [[880,0],[1100,.35],[880,.7],[1100,1.05],[660,1.4]].forEach(([f,t])=>{
+      const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+      o.connect(g);g.connect(audioCtx.destination);
+      o.frequency.value=f;o.type='sine';
+      const st=audioCtx.currentTime+t;
+      g.gain.setValueAtTime(0,st);
+      g.gain.linearRampToValueAtTime(.35,st+.05);
+      g.gain.linearRampToValueAtTime(0,st+.3);
+      o.start(st);o.stop(st+.35);
+    });
+  }catch(e){}
+}
+function dismissBanner(){document.getElementById('alBanner').classList.remove('show');if(bannerTO){clearTimeout(bannerTO);bannerTO=null;}}
+function resetAlarm(){clearAl();if(S.alarmOn)startCycle();}
+function snoozeAlarm(){
+  try{if(audioCtx)audioCtx.close();}catch(e){}
+  document.getElementById('ringOverlay').classList.remove('show');
+  dismissBanner(); clearAl();
+  alTimer=setTimeout(fireAlarm,15*60000);
+  S.alarmStart=Date.now()-(S.iv*3600000-15*60000); save();
+}
+function dismissAndLog(){
+  try{if(audioCtx)audioCtx.close();}catch(e){}
+  document.getElementById('ringOverlay').classList.remove('show');
+  dismissBanner(); openModal('urine');
+}
+function toggleAlarm(){
+  S.alarmOn=!S.alarmOn;
+  if(S.alarmOn)startCycle();else{clearAl();try{if(audioCtx)audioCtx.close();}catch(e){}}
+  updateToggles();save();
+}
+function toggleVibe(){S.vibeOn=!S.vibeOn;updateToggles();save();}
+function toggleDND(){S.dndOn=!S.dndOn;updateToggles();save();}
+function updateToggles(){
+  const tog=(id,on)=>{const e=document.getElementById(id);if(e)e.className='toggle'+(on?' on':'');};
+  tog('togMaster',S.alarmOn);tog('togVibe',S.vibeOn);tog('togDND',S.dndOn);
+  const b=document.getElementById('alBadge');
+  if(b){b.textContent=S.alarmOn?'ACTIVE':'OFF';b.className='alarm-badge '+(S.alarmOn?'on':'off');}
+  const bt=document.getElementById('alTogBtn');
+  if(bt)bt.textContent=S.alarmOn?'Stop':'Start';
+}
+function saveTarget(){
+  const v=parseInt(document.getElementById('targetIn').value);
+  if(v>=500&&v<=5000){S.waterTarget=v;save();renderAll();}
+}
+
+// ── COUNTDOWN ──────────────────────────────────────────────────
+function startCD(){if(cdTimer)clearInterval(cdTimer);cdTimer=setInterval(updateCD,1000);updateCD();}
+function updateCD(){
+  const cd=document.getElementById('alCD'),sub=document.getElementById('alSub'),prog=document.getElementById('alProg');
+  if(!S.alarmOn||!S.alarmStart){
+    if(cd)cd.textContent='--:--';if(sub)sub.textContent=S.alarmOn?'Starting...':'Alarm is off';if(prog)prog.style.width='0%';return;
+  }
+  const total=S.iv*3600000,elapsed=Date.now()-S.alarmStart,rem=Math.max(0,total-elapsed),pct=Math.min(100,(elapsed/total)*100);
+  const h=Math.floor(rem/3600000),m=Math.floor((rem%3600000)/60000),s=Math.floor((rem%60000)/1000);
+  if(cd)cd.textContent=h>0?`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`:`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  if(sub)sub.textContent=`Every ${S.iv}h · ${Math.round(pct)}% elapsed`;
+  if(prog)prog.style.width=pct+'%';
+  renderTimingMsg();
+}
+
+// ── PERMISSIONS ────────────────────────────────────────────────
+function reqPerm(){
+  if(!('Notification'in window)){document.getElementById('permSt').textContent='Not supported';return;}
+  Notification.requestPermission().then(p=>{
+    document.getElementById('permSt').textContent=
+      p==='granted'?'✓ Granted — alarms active':p==='denied'?'✗ Denied — enable in settings':'Dismissed';
+  });
+}
+function checkPerm(){
+  if(!('Notification'in window))return;
+  const p=Notification.permission;
+  document.getElementById('permSt').textContent=
+    p==='granted'?'✓ Granted — alarms active':p==='denied'?'✗ Denied — enable in settings':'Tap Allow to enable';
+}
+
+boot();
+</script>
+</body>
+</html>
